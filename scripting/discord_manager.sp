@@ -383,7 +383,7 @@ public void GuildList(DiscordBot bot, char[] id, char[] name, char[] icon, bool 
 public void OnPluginStart()
 {
 	manager.DebugMode = CreateConVar("discord_manager_debug", "1", "Debug mode");
-	manager.Token = CreateConVar("discord_manager_bot_token", "", "Bot token", FCVAR_PROTECTED);
+	manager.Token = CreateConVar("discord_manager_bot_token", "Njk3MjQ3MzkyMzE1MjExODU3.Xo1rZg.kE27TmeiwrtYh4RiMzwz5CYew6Y", "Bot token", FCVAR_PROTECTED);
 	manager.InvLink = CreateConVar("discord_manager_invite_link", "https://discord.gg/HpB5NE", "Invite link for your discord server");
 
 	manager.ChanID = CreateConVar("discord_manager_channel_id", "697171677041393717", "Channel ID");
@@ -403,10 +403,10 @@ public void OnPluginStart()
 	modules.ChatRelay = CreateConVar("discord_modules_chatrelay", "1", "ChatRelay module");
 	modules.WebHooks = CreateConVar("discord_modules_webhooks", "1", "Webhooks module");
 
-	modules.webhook.WebhookEnd[Map] = CreateConVar("discord_webhook_map", "", "Discord web hook endpoint for mapstart forward, Leave it empty to disable", FCVAR_PROTECTED);
-	modules.webhook.WebhookEnd[Ban] = CreateConVar("discord_webhook_ban", "", "Discord web hook endpoint for ban forward, Leave it empty to disable", FCVAR_PROTECTED);
-	modules.webhook.WebhookEnd[Report] = CreateConVar("discord_webhook_report", "", "Discord web hook endpoint for report forward, Leave it empty to disable", FCVAR_PROTECTED);
-	modules.webhook.WebhookEnd[Comms] = CreateConVar("discord_webhook_comms", "", "Discord web hook endpoint for comms forward, Leave it empty to disabled", FCVAR_PROTECTED);
+	modules.webhook.WebhookEnd[Map] = CreateConVar("discord_webhook_map", "https://discordapp.com/api/webhooks/697914614213771416/gzM5ORt_JY1g7nN1ILc3dQytbZUVeP8TCLN68oI9SndVRtmCIYARCXK8MetmiJIenufE", "Discord web hook endpoint for mapstart forward, Leave it empty to disable", FCVAR_PROTECTED);
+	modules.webhook.WebhookEnd[Ban] = CreateConVar("discord_webhook_ban", "https://discordapp.com/api/webhooks/697914789514707034/iWF-uHmk5emtiutST4z-6LiZSbmY52ZMhxkhc3TKN7OuAOKm4RrscejtftQBAxCN4jG1", "Discord web hook endpoint for ban forward, Leave it empty to disable", FCVAR_PROTECTED);
+	modules.webhook.WebhookEnd[Report] = CreateConVar("discord_webhook_report", "https://discordapp.com/api/webhooks/697914722896445530/xWDViezhgP1B2YLpV8aeFpaYpAZviGx1j6TZnNK3jS3wuquV0J7efOvRCyeKBk-Q357l", "Discord web hook endpoint for report forward, Leave it empty to disable", FCVAR_PROTECTED);
+	modules.webhook.WebhookEnd[Comms] = CreateConVar("discord_webhook_comms", "https://discordapp.com/api/webhooks/697914854878478456/H5dbRHBSl2JxNLkvOmsJek7fznkzkIEIBk87PEgBvaHT3CQMXcGVcn0kZp4iYLk_0OZH", "Discord web hook endpoint for comms forward, Leave it empty to disabled", FCVAR_PROTECTED);
 
 	modules.webhook.HookColor[Map] = CreateConVar("discord_webhook_map_color", "#30ED13", "Embed message color for map webhook, If left empty, #FF69B4 will be used instead.");
 	modules.webhook.HookColor[Ban] = CreateConVar("discord_webhook_ban_color", "#FF69B4", "Embed message color for ban webhook, If left empty, #FF69B4 will be used instead.");
@@ -429,11 +429,11 @@ public void OnPluginStart()
 
 	modules.relay.ChatRelayChannel = CreateConVar("discord_chatrelay_channel_id", "697871331961864262", "Relay Channel ID");
 	modules.relay.ChatRelayType = CreateConVar("discord_chatrelay_type", "2", "1 = plain name and message (bot) | 2 = Steam avatar+playername+message (webhook)");
-	modules.relay.ChatRelayHook = CreateConVar("discord_chatrelay_hook", "", "Discord web hook endpoint for kick forward. If left empty, the map endpoint will be used instead", FCVAR_PROTECTED);
+	modules.relay.ChatRelayHook = CreateConVar("discord_chatrelay_hook", "https://discordapp.com/api/webhooks/697952108959498320/UXDB84a0nHEBmVkZpCgMZad_APMYXy0a2w31NWpMxpWPODvgYioknB9dOCN8ZsfSKgy4", "Discord web hook endpoint for kick forward. If left empty, the map endpoint will be used instead", FCVAR_PROTECTED);
 	modules.relay.ChatRelayToServer = CreateConVar("discord_chatrelay_toserver", "1", "Print discord messages ingame");
 	modules.relay.ChatRelayPrefix = CreateConVar("discord_chatrelay_prefix", "{grey}[{red}DISCORD{grey}] >>{default}", "Discord message prefix");
 	
-	modules.relay.SteamApiKey = CreateConVar("discord_steam_api_key", "", "Steam API Key ( https://steamcommunity.com/dev/apikey )", FCVAR_PROTECTED);
+	modules.relay.SteamApiKey = CreateConVar("discord_steam_api_key", "C4EA6DCFD82DE554DB73E66F53924FA7", "Steam API Key ( https://steamcommunity.com/dev/apikey )", FCVAR_PROTECTED);
 
 	char sRegexErr[32];
 	RegexError RegexErr;
@@ -447,7 +447,7 @@ public void OnPluginStart()
 
 	LoadTranslations("common.phrases");
 	LoadTranslations("dsm.phrases");
-	AutoExecConfig(true, "discord_server_manager", "sourcemod");
+	AutoExecConfig(true, "caseopening_system", "sourcemod");
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
