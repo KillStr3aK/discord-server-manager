@@ -5,6 +5,7 @@
 		"#format"	"{1:s}"
 		"en" 		"Your ID: {grey}{1}"
 		"hu" 		"Azonosítód: {grey}{1}"
+		"fr"		"Identifiant: {grey}{1}"
 	}
 	
 	"Manager.Connect"
@@ -12,6 +13,7 @@
 		"#format"	"{1:s}"
 		"en"		"Connect to our discord server at: {blue}{1}"
 		"hu"		"Csatlakozz discord szerverünkre: {blue}{1}"
+		"fr"		"Connectez-vous à notre serveur de discord avec: {blue}{1}"
 	}
 
 	"Manager.Usage"
@@ -19,6 +21,7 @@
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"Use {yellow}{1} {2}{default} in channel {purple}#{3} {default}to get verified!"
 		"hu"		"Használd a {yellow}{1} {2}{default} parancsot a {purple}#{3} {default}szobában a megerősítéshez!"
+		"fr"		"Utiliser {yellow}{1} {2}{default} dans le canal {purple}#{3} {default}pour se faire vérifier!"
 	}
 
 	"Manager.MustVerify"
@@ -26,6 +29,7 @@
 		"#format"	"{1:s}"
 		"en"		"You have to verify your {blue}Discord {default}account! Type {gold}{1}"
 		"hu"		"Meg kell erősítened a {blue}Discord {default}fiókodat! Írd be, hogy {gold}{1}"
+		"fr"		"Vous devez vérifier votre {blue}Discord {default}account! Ecrit {gold}{1}"
 	}
 
 	"Manager.AlreadyLinked"
@@ -33,6 +37,7 @@
 		"#format"	"{1:s}"
 		"en"		"<@{1}> This discord account is already linked! ❌"
 		"hu"		"<@{1}> Ez a discord fiók már társítva van! ❌"
+		"fr"		"<@{1}> Ce compte Discord est déjà lié! ❌"
 	}
 
 	"Manager.Linked"
@@ -40,6 +45,7 @@
 		"#format"	"{1:s}"
 		"en"		"<@{1}> You've linked your account! ✅"
 		"hu"		"<@{1}> Sikeresen megerősítetted a fiókodat! ✅ \nmostmár visszamehetsz a szerverre^-^"
+		"fr"		"<@{1}> Vous avez lié votre compte! ✅"
 	}
 
 	"Manager.Verified"
@@ -47,6 +53,7 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"You have verified your account. ({green}{1}#{2}{default})"
 		"hu"		"Megerősítetted a fiókodat! ({green}{1}#{2}{default})"
+		"fr"		"Vous avez validé votre compte. ({green}{1}#{2}{default})"
 	}
 
 	"Manager.Info"
@@ -54,6 +61,7 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"<@{1}> This channel is being used for account linking!\nUsage: {2} <verification code>"
 		"hu"		"<@{1}> Ezt a szobát a fiókok megerősítésére használjuk!\nHasználat: {2} <azonosító>"
+		"fr"		"<@{1}> Ce canal est utilisé pour la liason de compte!\nUtilisation: {2} <code de vérification>"
 	}
 
 	"Manager.Invalid"
@@ -61,6 +69,7 @@
 		"#format"	"{1:s}"
 		"en"		"<@{1}> This code is invalid!"
 		"hu"		"<@{1}> Ez a megerősítő kód nem érvényes!"
+		"fr"		"<@{1}> Ce code n'est pas valable!"
 	}
 
 	"Modules.WebHook.LengthTime"
@@ -68,71 +77,83 @@
 		"#format"	"{1:d}"
 		"en"		"{1} minute"
 		"hu"		"{1} perc"
+		"fr"		"{1} minute"
 	}
 
 	"Modules.WebHook.LengthTemp"
 	{
 		"en"		"TEMPORARY"
 		"hu"		"IDEIGLENES"
+		"fr"		"TEMPORAIRE"
 	}
 
 	"Modules.WebHook.LengthPerm"
 	{
 		"en"		"PERMANENT"
 		"hu"		"VÉGLEGES"
+		"fr"		"PERMANENT"
 	}
 
 	"Modules.WebHook.AdminField"
 	{
 		"en"		"ADMIN"
 		"hu"		"ADMIN"
+		"fr"		"ADMIN"
 	}
 
 	"Modules.WebHook.TargetField"
 	{
 		"en"		"TARGET"
 		"hu"		"JÁTÉKOS"
+		"fr"		"CIBLE"
 	}
 
 	"Modules.WebHook.LengthField"
 	{
 		"en"		"LENGTH"
 		"hu"		"IDŐTARTAM"
+		"fr"		"DURÉE"
 	}
 
 	"Modules.WebHook.TypeField"
 	{
 		"en"		"TYPE"
 		"hu"		"TIPUS"
+		"fr"		"TYPE"
 	}
 
 	"Modules.WebHook.ReasonField"
 	{
 		"en"		"REASON"
 		"hu"		"INDOK"
+		"fr"		"RAISON"
 	}
 
 	"Modules.WebHook.CurrentMapField"
 	{
 		"en"		"Current Map:"
 		"hu"		"Jelenlegi pálya:"
+		"fr"		"Carte actuelle:"
 	}
 
 	"Modules.WebHook.PlayersOnlineField"
 	{
 		"en"		"Players Online:"
 		"hu"		"Elérhető Játékosok:"
+		"fr"		"Joueurs en ligne:"
 	}
 
 	"Modules.WebHook.DirectConnectField"
 	{
 		"en"		"Direct Connect:"
 		"hu"		"Csatlakozás:"
+		"fr"		"Connexion directe:"
 	}
 
 	"Modules.ChatRelay.InvalidName"
 	{
 		"en"		"INVALID NAME"
 		"hu"		"NÉVTELEN"
+		"fr"		"NOM INCORRECT"
 	}
 }
