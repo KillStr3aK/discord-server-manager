@@ -1,3 +1,14 @@
+/* CHANGELOG
+
+	1.2.1:
+		-Increased webhooks buffer size
+		-disord_webhook_map_delay to specify the delay of the map webhook
+		-Translation: "No reason specified"
+
+	1.2:
+		-Initial release of the new version
+*/
+
 #include <sourcemod>
 #include <colorvariables>
 
@@ -15,7 +26,7 @@
 #define PLUGIN_NEV	"DSM"
 #define PLUGIN_LERIAS	"DSM"
 #define PLUGIN_AUTHOR	"Nexd ( w Deathknife Discord-API )"
-#define PLUGIN_VERSION	"1.2"
+#define PLUGIN_VERSION	"1.2.1"
 #define PLUGIN_URL	"https://github.com/KillStr3aK"
 
 #pragma tabsize 0;
@@ -128,6 +139,8 @@ enum struct WebHooks {
 	ConVar FooterIkon;
 	ConVar HookIkon;
 
+	ConVar MapDelay;
+
 	char AuthorIcon[128];
 	char FooterIcon[128];
 	char HookIcon[128];
@@ -193,9 +206,9 @@ enum struct WebHooks {
 			if(type == Comms) mp.GetValue("commtype", commtype);
 			delete mp;
 
-			char szAdminName[MAX_NAME_LENGTH+1];
-			char szTargetName[MAX_NAME_LENGTH+1];
-			char szAuthorName[MAX_NAME_LENGTH+1];
+			char szAdminName[256];
+			char szTargetName[256];
+			char szAuthorName[256];
 			char szBuffer[128];
 			char szAuthId[20];
 			char szAuthId64[20];
@@ -212,6 +225,7 @@ enum struct WebHooks {
 			Format(szAdminName, sizeof(szAdminName), "%s (%s)", szAdminName, szAuthId);
 			Format(szTargetName, sizeof(szTargetName), "%s (%s)", szTargetName, szAuthId);
 			Format(szTitleLink, sizeof(szTitleLink), "https://steamcommunity.com/profiles/%s", szAuthId64);
+			if(strlen(reason) < 2) Format(reason, sizeof(reason), "%T", "Modules.WebHook.NoReason", LANG_SERVER);
 
 			if(time > 0) Format(szBuffer, sizeof szBuffer, "%T", "Modules.WebHook.LengthTime", LANG_SERVER, time);
 			else if(time < 0) Format(szBuffer, sizeof szBuffer, "%T", "Modules.WebHook.LengthTemp", LANG_SERVER);
@@ -370,9 +384,9 @@ GlobalForward g_hOnCheckedAccounts = null;
 
 Modules modules;
 
-/*public void OnPluginEnd() { manager.KillBot(); }
-public void OnMapEnd() { manager.KillBot(); }*/
-public void OnMapStart() { CreateTimer(manager.CheckInterval.FloatValue, VerifyAccounts, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE); CreateTimer(10.0, Timer_SendMap, _, TIMER_FLAG_NO_MAPCHANGE); }
+public void OnPluginEnd() { manager.KillBot(); }
+public void OnMapEnd() { /*manager.KillBot();*/ }
+public void OnMapStart() { CreateTimer(manager.CheckInterval.FloatValue, VerifyAccounts, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE); CreateTimer(modules.webhook.MapDelay.FloatValue, Timer_SendMap, _, TIMER_FLAG_NO_MAPCHANGE); }
 public Action VerifyAccounts(Handle timer) { manager.RetrieveMembers(); }
 static stock bool IsDiscordMember(Jatekos jatekos) { return playerdata[jatekos.index].Member; }
 public int Native_IsDiscordMember(Handle plugin, int params) { return playerdata[GetNativeCell(1)].Member; }
@@ -426,6 +440,8 @@ public void OnPluginStart()
 	modules.webhook.HookMention[Ban] = CreateConVar("discord_webhook_ban_mention", "<@&697333844025671770>", "Mention these roles with ban webhook, Leave it empty to disable");
 	modules.webhook.HookMention[Report] = CreateConVar("discord_webhook_report_mention", "<@&697333844025671770>", "Mention these roles with report webhook, Leave it empty to disable");
 	modules.webhook.HookMention[Comms] = CreateConVar("discord_webhook_comms_mention", "<@&697333844025671770>", "Mention these roles with comms webhook, Leave it empty to disable");
+
+	modules.webhook.MapDelay = CreateConVar("disord_webhook_map_delay", "30.0", "Seconds to wait after mapstart to send the map webhook");
 
 	modules.relay.ChatRelayChannel = CreateConVar("discord_chatrelay_channel_id", "697871331961864262", "Relay Channel ID");
 	modules.relay.ChatRelayType = CreateConVar("discord_chatrelay_type", "2", "1 = plain name and message (bot) | 2 = Steam avatar+playername+message (webhook)");
@@ -486,6 +502,8 @@ public Action Command_ViewId(int client, int args)
 }
 
 public void OnAllPluginsLoaded() {
+	if(manager.Bot != view_as<DiscordBot>(INVALID_HANDLE)) return;
+
 	char token[60];
 	manager.Token.GetString(token, sizeof(token));
 	manager.SetToken(token);
@@ -595,6 +613,7 @@ public void OnClientPostAdminCheck(int client)
 
 public void GetUserData(Handle owner, Handle hndl, const char[] error, Jatekos jatekos)
 {
+	if(!jatekos.IsValid) return;
 	if(SQL_GetRowCount(hndl) == 0)
 	{
 		char szSteamId[20];
@@ -851,8 +870,11 @@ public void AccountsCheck()
 	Format(Query, sizeof(Query), "UPDATE `%s` SET `checked` = 0 WHERE `%s`.`ID` > 0;", g_szTableName, g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
 
-	DiscordBot b = new DiscordBot(manager.BotToken);
-	b.GetGuildMembersAll(manager.GuildID, OnGetMembersAll);
+	char token[60], guildid[20];
+	manager.Token.GetString(token, sizeof(token));
+	manager.GuiID.GetString(guildid, sizeof(guildid));
+	DiscordBot b = new DiscordBot(token);
+	b.GetGuildMembersAll(guildid, OnGetMembersAll);
 }
 
 public void OnGetMembersAll(DiscordBot bot, char[] guild, Handle hMemberList)
@@ -873,7 +895,7 @@ public void OnGetMembersAll(DiscordBot bot, char[] guild, Handle hMemberList)
 
 	Format(Query, sizeof(Query), "DELETE FROM %s WHERE checked = 0;", g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
-
+	if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Database refreshed!"); }
 	RefreshClients();
 }
 
