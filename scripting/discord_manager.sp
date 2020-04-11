@@ -896,6 +896,7 @@ public void OnGetMembersAll(DiscordBot bot, char[] guild, Handle hMemberList)
 	Format(Query, sizeof(Query), "DELETE FROM %s WHERE checked = 0;", g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
 	if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Database refreshed!"); }
+	delete bot;
 	RefreshClients();
 }
 
