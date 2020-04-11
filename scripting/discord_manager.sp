@@ -33,11 +33,11 @@ public Plugin myinfo =
 
 char sHostname[512];
 char szTranslationBuffer[256];
-char szColorList[18][] = {
+char szColorList[19][] = {
 	"{green}", "{lime}", "{default}", "{lightgreen}",
 	"{gray}", "{grey}", "{bluegrey}", "{grey2}", "{gold}",
 	"{red}", "{lightred}", "{darkred}", "{blue}", "{yellow}",
-	"{teamcolor}", "{orchid}", "{purple}", "{rainbow}"
+	"{teamcolor}", "{orchid}", "{purple}", "{rainbow}", "{darkblue}"
 };
 
 methodmap Jatekos
@@ -94,7 +94,7 @@ enum struct ServerManager {
 	void SetToken(const char BotToken[60]) { this.BotToken = BotToken; }
 	void SetChannel(const char ChannelID[20]) { this.ChannelID = ChannelID; }
 	void SetServer(const char GuildID[20]) { this.GuildID = GuildID; }
-	void RetrieveMembers() { AccountsCheck(); }
+	void RetrieveMembers() { if(this.DebugMode.BoolValue) { PrintToChatAll(" \x09Refreshing players.."); } AccountsCheck(); }
 	void KillBot() { delete this.Bot; }
 	
 	#pragma deprecated Use ServerManager::KillBot();
@@ -346,7 +346,7 @@ enum struct ChatRelay {
 		}
 	}
 
-	void RemoveColors(char[] message, int maxlength) { for(int i = 0; i < 18; i++) ReplaceString(message, maxlength, szColorList[i], "", false); }
+	void RemoveColors(char[] message, int maxlength) { for(int i = 0; i < 19; i++) ReplaceString(message, maxlength, szColorList[i], "", false); }
 }
 
 enum struct Modules {
@@ -361,7 +361,7 @@ enum struct Modules {
 	ChatRelay relay;
 }
 
-char g_szTableName[32], g_szLinkCommand[10], g_szPrefix[100], g_szViewIdCommand[10];
+char g_szTableName[32], g_szLinkCommand[20], g_szPrefix[100], g_szViewIdCommand[20];
 ConVar g_cDataTable, g_cDatabase, g_cLinkCommand, g_cViewIdCommand, g_cPrefix;
 Database g_DB;
 
@@ -370,8 +370,8 @@ GlobalForward g_hOnCheckedAccounts = null;
 
 Modules modules;
 
-public void OnPluginEnd() { manager.KillBot(); }
-public void OnMapEnd() { manager.KillBot(); }
+/*public void OnPluginEnd() { manager.KillBot(); }
+public void OnMapEnd() { manager.KillBot(); }*/
 public void OnMapStart() { CreateTimer(manager.CheckInterval.FloatValue, VerifyAccounts, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE); CreateTimer(10.0, Timer_SendMap, _, TIMER_FLAG_NO_MAPCHANGE); }
 public Action VerifyAccounts(Handle timer) { manager.RetrieveMembers(); }
 static stock bool IsDiscordMember(Jatekos jatekos) { return playerdata[jatekos.index].Member; }
@@ -429,7 +429,7 @@ public void OnPluginStart()
 
 	modules.relay.ChatRelayChannel = CreateConVar("discord_chatrelay_channel_id", "697871331961864262", "Relay Channel ID");
 	modules.relay.ChatRelayType = CreateConVar("discord_chatrelay_type", "2", "1 = plain name and message (bot) | 2 = Steam avatar+playername+message (webhook)");
-	modules.relay.ChatRelayHook = CreateConVar("discord_chatrelay_hook", "", "Discord web hook endpoint for kick forward. If left empty, the map endpoint will be used instead", FCVAR_PROTECTED);
+	modules.relay.ChatRelayHook = CreateConVar("discord_chatrelay_hook", "", "Discord web hook endpoint for chatrelay", FCVAR_PROTECTED);
 	modules.relay.ChatRelayToServer = CreateConVar("discord_chatrelay_toserver", "1", "Print discord messages ingame");
 	modules.relay.ChatRelayPrefix = CreateConVar("discord_chatrelay_prefix", "{grey}[{red}ANNOUNCEMENT{grey}] >>{default}", "Discord message prefix");
 	
@@ -616,7 +616,7 @@ public void GetUserData(Handle owner, Handle hndl, const char[] error, Jatekos j
 
 	char szSteamId64[20];
 	jatekos.GetAuthId(AuthId_SteamID64, szSteamId64, sizeof(szSteamId64));
-	if(manager.ServerID.IntValue > 1) Format(playerdata[jatekos.index].UniqueCode, sizeof(PlayerData::UniqueCode), "%i-%s", manager.GuiID.IntValue, szSteamId64);
+	if(manager.ServerID.IntValue > 1) Format(playerdata[jatekos.index].UniqueCode, sizeof(PlayerData::UniqueCode), "%i-%s", manager.ServerID.IntValue, szSteamId64);
 	else Format(playerdata[jatekos.index].UniqueCode, sizeof(PlayerData::UniqueCode), "%s", szSteamId64);
 }
 
@@ -753,11 +753,11 @@ public void OnMessageReceived(DiscordBot bot, DiscordChannel channel, DiscordMes
 
 	if(StrEqual(szValues[0], g_szLinkCommand))
 	{
-		if(manager.GuiID.IntValue > 1)
+		if(manager.ServerID.IntValue > 1)
 		{
 			char _szValues[2][50];
 			ExplodeString(szValues[1], "-", _szValues, sizeof(_szValues), sizeof(_szValues[]));
-			if(StringToInt(_szValues[0]) != manager.GuiID.IntValue) return; //Prevent multiple replies from the bot (for e.g. the plugin is installed on more than 1 server and they're using the same bot & channel)
+			if(StringToInt(_szValues[0]) != manager.ServerID.IntValue) return; //Prevent multiple replies from the bot (for e.g. the plugin is installed on more than 1 server and they're using the same bot & channel)
 		}
 
 		Jatekos jatekos = GetJatekosFromUniqueCode(szValues[1]);
@@ -781,7 +781,7 @@ public void OnMessageReceived(DiscordBot bot, DiscordChannel channel, DiscordMes
 			SQL_TQuery(g_DB, CheckUserData, Query, datapack);
 		}
 	} else {
-		if(manager.GuiID.IntValue == 1)
+		if(manager.ServerID.IntValue == 1)
 		{
 			Format(szReply, sizeof(szReply), "%T", "Manager.Info", LANG_SERVER, userID, g_szLinkCommand);
 			manager.Bot.SendMessage(channel, szReply);
@@ -851,7 +851,8 @@ public void AccountsCheck()
 	Format(Query, sizeof(Query), "UPDATE `%s` SET `checked` = 0 WHERE `%s`.`ID` > 0;", g_szTableName, g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
 
-	manager.Bot.GetGuildMembersAll(manager.GuildID, OnGetMembersAll);
+	DiscordBot b = new DiscordBot(manager.BotToken);
+	b.GetGuildMembersAll(manager.GuildID, OnGetMembersAll);
 }
 
 public void OnGetMembersAll(DiscordBot bot, char[] guild, Handle hMemberList)
