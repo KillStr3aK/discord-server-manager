@@ -1,0 +1,117 @@
+﻿"Phrases"
+{
+	"Manager.YourID"
+	{
+		"#format"	"{1:s}"
+		"pt" 		"Seu ID: {grey}{1}"
+	}
+	
+	"Manager.Connect"
+	{
+		"#format"	"{1:s}"
+		"pt"		"Conecte-se ao nosso servidor de {darkred}Discord: {blue}{1}"
+	}
+
+	"Manager.Usage"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"pt"		"Use {yellow}{1} {2}{default} no canal {purple}#{3} {default}para ser verificado!"
+	}
+
+	"Manager.MustVerify"
+	{
+		"#format"	"{1:s}"
+		"pt"		"Você precisa verificar sua conta {blue}Discord{default}! Digite {gold}{1}"
+	}
+
+	"Manager.AlreadyLinked"
+	{
+		"#format"	"{1:s}"
+		"pt"		"<@{1}> Esta conta de discord já está vinculada! ❌"
+	}
+
+	"Manager.Linked"
+	{
+		"#format"	"{1:s}"
+		"pt"		"<@{1}> Você vinculou sua conta! ✅"
+	}
+
+	"Manager.Verified"
+	{
+		"#format"	"{1:s},{2:s}"
+		"pt"		"Você verificou sua conta. ({green}{1}#{2}{default})"
+	}
+
+	"Manager.Info"
+	{
+		"#format"	"{1:s},{2:s}"
+		"pt"		"<@{1}> Este canal está sendo usado para vincular contas!\Digite: {2} <verification code>"
+	}
+
+	"Manager.Invalid"
+	{
+		"#format"	"{1:s}"
+		"pt"		"<@{1}> Este código é inválido!"
+	}
+
+	"Modules.WebHook.LengthTime"
+	{
+		"#format"	"{1:d}"
+		"pt"		"{1} minutos"
+	}
+
+	"Modules.WebHook.LengthTemp"
+	{
+		"pt"		"TEMPORÁRIO"
+	}
+
+	"Modules.WebHook.LengthPerm"
+	{
+		"pt"		"PERMANENTE"
+	}
+
+	"Modules.WebHook.AdminField"
+	{
+		"pt"		"ADMIN"
+	}
+
+	"Modules.WebHook.TargetField"
+	{
+		"pt"		"ALVO"
+	}
+
+	"Modules.WebHook.LengthField"
+	{
+		"pt"		"COMPRIMENTO"
+	}
+
+	"Modules.WebHook.TypeField"
+	{
+		"pt"		"TIPO"
+	}
+
+	"Modules.WebHook.ReasonField"
+	{
+		"pt"		"MOTIVO"
+	}
+
+	"Modules.WebHook.CurrentMapField"
+	{
+		"pt"		"Mapa Atual:"
+	}
+
+	"Modules.WebHook.PlayersOnlineField"
+	{
+		"pt"		"Players Online:"
+	}
+
+	"Modules.WebHook.DirectConnectField"
+	{
+		"pt"		"Direct Connect:"
+	}
+
+	"Modules.ChatRelay.InvalidName"
+	{
+		"pt"		"NOME INVÁLIDO"
+	}
+}
