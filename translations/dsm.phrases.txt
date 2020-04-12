@@ -162,4 +162,10 @@
 		"en"		"No reason specified"
 		"hu"		"Nincs indok megadva"
 	}
+
+	"Modules.WebHook.Player"
+	{
+		"en"		"PLAYER"
+		"hu"		"JÁTÉKOS"
+	}
 }
