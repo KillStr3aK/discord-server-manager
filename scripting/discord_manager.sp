@@ -1,11 +1,15 @@
 /* CHANGELOG
+	1.2.2: 12/04/2020
+		-Translation: "PLAYER"
+		-Fixed couple of errors
+		-More debug messages to avoid errors
 
-	1.2.1:
+	1.2.1: 11/04/2020
 		-Increased webhooks buffer size
 		-disord_webhook_map_delay to specify the delay of the map webhook
 		-Translation: "No reason specified"
 
-	1.2:
+	1.2: 10/04/2020
 		-Initial release of the new version
 */
 
@@ -14,6 +18,7 @@
 
 #include <discord>
 #include <SteamWorks>
+#include "discord/DiscordRequest.sp"
 #include <servermanager>
 #include <regex>
 
@@ -26,7 +31,7 @@
 #define PLUGIN_NEV	"DSM"
 #define PLUGIN_LERIAS	"DSM"
 #define PLUGIN_AUTHOR	"Nexd ( w Deathknife Discord-API )"
-#define PLUGIN_VERSION	"1.2.1"
+#define PLUGIN_VERSION	"1.2.2"
 #define PLUGIN_URL	"https://github.com/KillStr3aK"
 
 #pragma tabsize 0;
@@ -99,8 +104,30 @@ enum struct ServerManager {
 	char InviteLink[30];
 	DiscordBot Bot;
 
-	void CreateBot(bool guilds = true, bool listen = true) { this.Bot = new DiscordBot(this.BotToken); if(guilds) this.Bot.GetGuilds(GuildList, _, listen); }
-	void GetGuilds(bool listen = true) { if(this.DebugMode.BoolValue) { PrintToChatAll(" \x09Looking for guilds.."); } this.Bot.GetGuilds(GuildList, _, listen); }
+	void CreateBot(bool guilds = true, bool listen = true) {
+		if(strlen(this.BotToken) < 5 && this.DebugMode.BoolValue) {
+			PrintToChatAll(" \x07BotToken missing..");
+			return;
+		}
+
+		this.Bot = new DiscordBot(this.BotToken);
+		if(guilds) this.Bot.GetGuilds(GuildList, _, listen);
+	}
+
+	void GetGuilds(bool listen = true) {
+		if(strlen(this.BotToken) < 5 && this.DebugMode.BoolValue) return;
+
+		if(this.DebugMode.BoolValue) {
+			PrintToChatAll(" \x09Looking for guilds..");
+		}
+			
+		if(strlen(this.GuildID) < 5 && this.DebugMode.BoolValue) {
+			PrintToChatAll(" \x07GuildID missing..");
+			return;
+		}
+			
+		this.Bot.GetGuilds(GuildList, _, listen);
+	}
 	void ReCreateBot() { this.KillBot(); this.CreateBot(); }
 	void SetToken(const char BotToken[60]) { this.BotToken = BotToken; }
 	void SetChannel(const char ChannelID[20]) { this.ChannelID = ChannelID; }
@@ -188,6 +215,7 @@ enum struct WebHooks {
 		if(strlen(endpoint) < 5)
 		{
 			LogError("Invalid(most likely empty) webhook endpoint (Type-%d)", type);
+			if(strlen(endpoint) < 5 && manager.DebugMode.BoolValue) { PrintToChatAll(" \x07Endpoint is missing.."); return; }
 			return;
 		}
 
@@ -234,7 +262,7 @@ enum struct WebHooks {
 			embed.SetAuthorIcon(this.AuthorIcon);
 			embed.SetAuthor(szAuthorName);
 			embed.SetAuthorLink(szTitleLink);
-			Format(szTranslationBuffer, sizeof(szTranslationBuffer), "%T", "Modules.WebHook.AdminField", LANG_SERVER);
+			Format(szTranslationBuffer, sizeof(szTranslationBuffer), "%T", type==Report?"Modules.WebHook.Player":"Modules.WebHook.AdminField", LANG_SERVER);
 			embed.AddField(szTranslationBuffer, szAdminName, true);
 			Format(szTranslationBuffer, sizeof(szTranslationBuffer), "%T", "Modules.WebHook.TargetField", LANG_SERVER);
 			embed.AddField(szTranslationBuffer, szTargetName, true);
@@ -321,6 +349,7 @@ enum struct ChatRelay {
 
 	void SendToDiscord(int client, RelayType type, const char[] message, int maxlength = 512, bool timestamp = true)
 	{
+		if(strlen(this.RelayHook) < 5 && manager.DebugMode.BoolValue) { PrintToChatAll(" \x07RelayHook endpoint is missing.."); return; }
 		char[] sMessage = new char[maxlength];
 		char[] szSafeText = new char[maxlength];
 		char szPlayerName[MAX_NAME_LENGTH+1];
@@ -379,6 +408,10 @@ char g_szTableName[32], g_szLinkCommand[20], g_szPrefix[100], g_szViewIdCommand[
 ConVar g_cDataTable, g_cDatabase, g_cLinkCommand, g_cViewIdCommand, g_cPrefix;
 Database g_DB;
 
+Handle hRateLimit = null;
+Handle hRateReset = null;
+Handle hRateLeft = null;
+
 GlobalForward g_hOnLinkedAccount = null;
 GlobalForward g_hOnCheckedAccounts = null;
 
@@ -387,10 +420,13 @@ Modules modules;
 public void OnPluginEnd() { manager.KillBot(); }
 public void OnMapEnd() { /*manager.KillBot();*/ }
 public void OnMapStart() { CreateTimer(manager.CheckInterval.FloatValue, VerifyAccounts, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE); CreateTimer(modules.webhook.MapDelay.FloatValue, Timer_SendMap, _, TIMER_FLAG_NO_MAPCHANGE); }
+public int HTTPCompleted(Handle request, bool failure, bool requestSuccessful, EHTTPStatusCode statuscode, any data, any data2) {}
 public Action VerifyAccounts(Handle timer) { manager.RetrieveMembers(); }
 static stock bool IsDiscordMember(Jatekos jatekos) { return playerdata[jatekos.index].Member; }
 public int Native_IsDiscordMember(Handle plugin, int params) { return playerdata[GetNativeCell(1)].Member; }
 public int Native_RefreshClients(Handle plugin, int params) { RefreshClients(); }
+public Action SendGetMembers(Handle timer, any data) { GetMembers(view_as<Handle>(data)); }
+public Action Command_Recreate(int client, int args) { manager.ReCreateBot(); return Plugin_Handled; }
 public void RefreshClients() { for(int i = 1; i <= MaxClients; i++) if(IsValidClient(i)) OnClientPostAdminCheck(i); }
 public void SQLHibaKereso(Handle owner, Handle hndl, const char[] error, any data) { if(!StrEqual(error, "")) LogError(error); }
 public void GuildList(DiscordBot bot, char[] id, char[] name, char[] icon, bool owner, int permissions, const bool listen) { if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Found guild: %s %s", id, name); PrintToChatAll(" \x09Looking for channels.."); } manager.Bot.GetGuildChannels(id, ChannelList, INVALID_FUNCTION, listen); }
@@ -441,8 +477,6 @@ public void OnPluginStart()
 	modules.webhook.HookMention[Report] = CreateConVar("discord_webhook_report_mention", "<@&697333844025671770>", "Mention these roles with report webhook, Leave it empty to disable");
 	modules.webhook.HookMention[Comms] = CreateConVar("discord_webhook_comms_mention", "<@&697333844025671770>", "Mention these roles with comms webhook, Leave it empty to disable");
 
-	modules.webhook.MapDelay = CreateConVar("disord_webhook_map_delay", "30.0", "Seconds to wait after mapstart to send the map webhook");
-
 	modules.relay.ChatRelayChannel = CreateConVar("discord_chatrelay_channel_id", "697871331961864262", "Relay Channel ID");
 	modules.relay.ChatRelayType = CreateConVar("discord_chatrelay_type", "2", "1 = plain name and message (bot) | 2 = Steam avatar+playername+message (webhook)");
 	modules.relay.ChatRelayHook = CreateConVar("discord_chatrelay_hook", "", "Discord web hook endpoint for chatrelay", FCVAR_PROTECTED);
@@ -450,20 +484,24 @@ public void OnPluginStart()
 	modules.relay.ChatRelayPrefix = CreateConVar("discord_chatrelay_prefix", "{grey}[{red}ANNOUNCEMENT{grey}] >>{default}", "Discord message prefix");
 	
 	modules.relay.SteamApiKey = CreateConVar("discord_steam_api_key", "", "Steam API Key ( https://steamcommunity.com/dev/apikey )", FCVAR_PROTECTED);
+	modules.webhook.MapDelay = CreateConVar("disord_webhook_map_delay", "30.0", "Seconds to wait after mapstart to send the map webhook");
 
 	char sRegexErr[32];
 	RegexError RegexErr;
 	modules.relay.regex = CompileRegex(".*(clyde).*", PCRE_CASELESS, sRegexErr, sizeof(sRegexErr), RegexErr);
 	if (RegexErr != REGEX_ERROR_NONE) LogError("Could not compile \"Clyde\" regex (err: %s)", sRegexErr);
 
-	char szCommand[32];
-	g_cViewIdCommand.GetString(szCommand, sizeof(szCommand));
-	RegConsoleCmd(szCommand, Command_ViewId);
 	LoadCommands();
 
 	LoadTranslations("common.phrases");
 	LoadTranslations("dsm.phrases");
 	AutoExecConfig(true, "discord_server_manager", "sourcemod");
+
+	hRateLeft = new StringMap();
+	hRateReset = new StringMap();
+	hRateLimit = new StringMap();
+
+	RegAdminCmd("sm_recreate", Command_Recreate, ADMFLAG_ROOT);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -501,7 +539,7 @@ public Action Command_ViewId(int client, int args)
 	return Plugin_Handled;
 }
 
-public void OnAllPluginsLoaded() {
+/*public void OnAllPluginsLoaded() {
 	if(manager.Bot != view_as<DiscordBot>(INVALID_HANDLE)) return;
 
 	char token[60];
@@ -509,21 +547,23 @@ public void OnAllPluginsLoaded() {
 	manager.SetToken(token);
 	manager.CreateBot(false, false);
 	//manager.Bot.MessageCheckInterval = g_cMessageInterval.FloatValue; Changing the value returns invalid handle, anyway the default value is 1.0
-}
+}*/
 
 public void OnConfigsExecuted()
 {
 	FindConVar("hostname").GetString(sHostname, sizeof(sHostname));
 
-	char channel[20], guildid[20];
-	manager.ChanID.GetString(channel, sizeof(channel));
-	manager.GuiID.GetString(guildid, sizeof(guildid));
+	manager.Token.GetString(manager.BotToken, sizeof(ServerManager::BotToken));
+	manager.ChanID.GetString(manager.ChannelID, sizeof(ServerManager::ChannelID));
+	manager.GuiID.GetString(manager.GuildID, sizeof(ServerManager::GuildID));
 	manager.InvLink.GetString(manager.InviteLink, sizeof(ServerManager::InviteLink));
 
 	g_cLinkCommand.GetString(g_szLinkCommand, sizeof(g_szLinkCommand));
 	g_cViewIdCommand.GetString(g_szViewIdCommand, sizeof(g_szViewIdCommand));
 	g_cPrefix.GetString(g_szPrefix, sizeof(g_szPrefix));
-	
+
+	if(manager.Bot == view_as<DiscordBot>(INVALID_HANDLE)) { RegConsoleCmd(g_szViewIdCommand, Command_ViewId);  manager.CreateBot(); }
+
 	modules.webhook.WebhookEnd[Map].GetString(modules.webhook.Map, sizeof(WebHooks::Map));
 	modules.webhook.WebhookEnd[Ban].GetString(modules.webhook.Ban, sizeof(WebHooks::Ban));
 	modules.webhook.WebhookEnd[Comms].GetString(modules.webhook.Comms, sizeof(WebHooks::Comms));
@@ -552,10 +592,6 @@ public void OnConfigsExecuted()
 	modules.relay.ChatRelayChannel.GetString(modules.relay.RelayChannel, sizeof(ChatRelay::RelayChannel));
 	modules.relay.ChatRelayHook.GetString(modules.relay.RelayHook, sizeof(ChatRelay::RelayHook));
 	modules.relay.ChatRelayPrefix.GetString(modules.relay.RelayPrefix, sizeof(ChatRelay::RelayPrefix));
-
-	manager.SetChannel(channel);
-	manager.SetServer(guildid);
-	manager.GetGuilds();
 
 	char _error[255];
 	char _db[32];
@@ -601,6 +637,10 @@ public void OnClientPostAdminCheck(int client)
 
 	if(view_as<RelayType>(modules.relay.ChatRelayType.IntValue) == Hook)
 	{
+		if(strlen(modules.relay.ApiKey) < 5 && manager.DebugMode.BoolValue) {
+			PrintToChatAll(" \x07SteamAPI Key missing..");
+			return;
+		}
 		char szSteamID64[32];
 		if(!GetClientAuthId(client, AuthId_SteamID64, szSteamID64, sizeof(szSteamID64))) return;
 
@@ -644,6 +684,7 @@ stock int OnTransferCompleted(Handle hRequest, bool bFailure, bool bRequestSucce
 	if (bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode200OK)
 	{
 		LogError("SteamAPI HTTP Response failed: %d", eStatusCode);
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07SteamAPI HTTP Response failed: %d", eStatusCode); return; }
 		delete hRequest;
 		return;
 	}
@@ -666,6 +707,7 @@ stock void APIWebResponse(const char[] sData, int client)
 	if (!kvResponse.ImportFromString(sData, "SteamAPIResponse"))
 	{
 		LogError("kvResponse.ImportFromString(\"SteamAPIResponse\") in APIWebResponse failed.");
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07kvResponse.ImportFromString(\"SteamAPIResponse\") in APIWebResponse failed."); return; }
 
 		delete kvResponse;
 		return;
@@ -674,6 +716,7 @@ stock void APIWebResponse(const char[] sData, int client)
 	if (!kvResponse.JumpToKey("players"))
 	{
 		LogError("kvResponse.JumpToKey(\"players\") in APIWebResponse failed.");
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07kvResponse.JumpToKey(\"players\") in APIWebResponse failed."); return; }
 
 		delete kvResponse;
 		return;
@@ -682,6 +725,7 @@ stock void APIWebResponse(const char[] sData, int client)
 	if (!kvResponse.GotoFirstSubKey())
 	{
 		LogError("kvResponse.GotoFirstSubKey() in APIWebResponse failed.");
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07kvResponse.GotoFirstSubKey() in APIWebResponse failed."); return; }
 
 		delete kvResponse;
 		return;
@@ -720,7 +764,12 @@ public void ChannelList(DiscordBot bot, const char[] guild, DiscordChannel Chann
 		if(StrEqual(id, manager.ChannelID))
 		{
 			manager.ChannelName = name;
-			if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Found channel #%s (%s)", name, id); }
+			if(manager.DebugMode.BoolValue) {
+				PrintToChatAll(" \x04Found channel #%s (%s)", name, id);
+				if(strlen(g_szLinkCommand) > 2) PrintToChatAll(" \x04Verification command: %s", g_szLinkCommand);
+				else PrintToChatAll(" \x07Verification command was not set!");
+			}
+			
 			if(listen)
 			{
 				manager.Bot.StopListeningToChannel(Channel);
@@ -729,7 +778,17 @@ public void ChannelList(DiscordBot bot, const char[] guild, DiscordChannel Chann
 		} else if(StrEqual(id, modules.relay.RelayChannel))
 		{
 			modules.relay.ChannelName = name;
-			if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Found channel #%s (%s)", name, id); }
+			if(manager.DebugMode.BoolValue) {
+				PrintToChatAll(" \x04Found channel #%s (%s)", name, id);
+
+				RelayType type = view_as<RelayType>(modules.relay.ChatRelayType.IntValue);
+				switch(type)
+				{
+					case Plain: PrintToChatAll(" \x04ChatRelay Type: Plain");
+					case Hook: PrintToChatAll(" \x04ChatRelay Type: Hook");
+					default: PrintToChatAll(" \x07ChatRelay Type: Unknown");
+				}
+			}
 			if(modules.relay.ChatRelayToServer.BoolValue)
 			{
 				manager.Bot.StopListeningToChannel(Channel);
@@ -857,6 +916,14 @@ public void CheckUserData(Handle owner, Handle hndl, const char[] error, DataPac
 
 public void AccountsCheck()
 {
+	if(strlen(manager.BotToken) < 5 && manager.DebugMode.BoolValue) {
+		PrintToChatAll(" \x07BotToken missing.."); 
+		return;
+	} if(strlen(manager.GuildID) < 5 && manager.DebugMode.BoolValue) {
+		PrintToChatAll(" \x07GuildID missing..");
+		return;
+	}
+
 	Action action = Plugin_Continue;
     Call_StartForward(g_hOnCheckedAccounts);
 	Call_PushString(manager.BotToken);
@@ -870,34 +937,206 @@ public void AccountsCheck()
 	Format(Query, sizeof(Query), "UPDATE `%s` SET `checked` = 0 WHERE `%s`.`ID` > 0;", g_szTableName, g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
 
-	char token[60], guildid[20];
-	manager.Token.GetString(token, sizeof(token));
-	manager.GuiID.GetString(guildid, sizeof(guildid));
-	DiscordBot b = new DiscordBot(token);
-	b.GetGuildMembersAll(guildid, OnGetMembersAll);
+	Handle hData = json_object();
+	json_object_set_new(hData, "limit", json_integer(1000));
+	json_object_set_new(hData, "afterID", json_string(""));
+	GetMembers(hData);
 }
 
-public void OnGetMembersAll(DiscordBot bot, char[] guild, Handle hMemberList)
+static void GetMembers(Handle hData = INVALID_HANDLE)
+{
+	int limit = JsonObjectGetInt(hData, "limit");
+	char afterID[32];
+	JsonObjectGetString(hData, "afterID", afterID, sizeof(afterID));
+	
+	char url[256];
+	if(StrEqual(afterID, "")) FormatEx(url, sizeof(url), "https://discordapp.com/api/guilds/%s/members?limit=%i", manager.GuildID, limit);
+	else FormatEx(url, sizeof(url), "https://discordapp.com/api/guilds/%s/members?limit=%i&afterID=%s", manager.GuildID, limit, afterID);
+	
+	char route[128];
+	FormatEx(route, sizeof(route), "guild/%s/members", manager.GuildID);
+	
+	DiscordRequest request = new DiscordRequest(url, k_EHTTPMethodGET);
+	if(request == null) { CreateTimer(2.0, SendGetMembers, hData); return; }
+	request.SetCallbacks(HTTPCompleted, MembersDataReceive);
+	request.SetBot(manager.Bot);
+	request.SetData(hData, route);
+	request.Send(route);
+}
+
+public void MembersDataReceive(Handle request, bool failure, int offset, int statuscode, any dp) {
+	if(failure || (statuscode != 200)) {
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07Failed to refresh database! (%d-%d) N1", failure, statuscode); }
+		if(statuscode == 400) { PrintToServer("BAD REQUEST"); }
+		if(statuscode == 429 || statuscode == 500) {
+			GetMembers(dp);
+			delete request;
+			return;
+		}
+		LogError("[DISCORD] Couldn't Send GetMembers - Fail %i %i", failure, statuscode);
+		if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x07Failed to refresh database! (%d-%d) N2", failure, statuscode); }
+		delete request;
+		delete view_as<Handle>(dp);
+		return;
+	}
+	SteamWorks_GetHTTPResponseBodyCallback(request, GetMembersData, dp);
+	delete request;
+}
+
+public int GetMembersData(const char[] data, any dp) {
+	Handle hJson = json_load(data);
+	Handle hData = view_as<Handle>(dp);
+	OnGetMembersAll(hJson);
+	if(JsonObjectGetBool(hData, "autoPaginate")) {
+		int size = json_array_size(hJson);
+		int limit = JsonObjectGetInt(hData, "limit");
+		if(limit == size) {
+			Handle hLast = json_array_get(hJson, size - 1);
+			char lastID[32];
+			json_string_value(hLast, lastID, sizeof(lastID));
+			delete hJson;
+			delete hLast;
+				
+			json_object_set_new(hData, "afterID", json_string(lastID));
+			GetMembers(hData);
+			return;
+		}
+	}
+	
+	delete hJson;
+	delete hData;
+}
+
+public void OnGetMembersAll(Handle hMemberList)
 {
 	char Query[256];
+	char userid[20];
+	DiscordGuildUser GuildUser;
+	DiscordUser user;
 	for(int i = 0; i < json_array_size(hMemberList); i++) {
-		DiscordGuildUser GuildUser = view_as<DiscordGuildUser>(json_array_get(hMemberList, i));
-		DiscordUser user = GuildUser.GetUser();
-		char userid[20];
+		GuildUser = view_as<DiscordGuildUser>(json_array_get(hMemberList, i));
+		user = GuildUser.GetUser();
 		user.GetID(userid, sizeof(userid));
 
 		Format(Query, sizeof(Query), "UPDATE `%s` SET `checked` = 1 WHERE `%s`.`userid` = '%s';", g_szTableName, g_szTableName, userid);
 		SQL_TQuery(g_DB, SQLHibaKereso, Query);
-		
-		delete user;
-		delete GuildUser;
 	}
+
+	delete user;
+	delete GuildUser;
 
 	Format(Query, sizeof(Query), "DELETE FROM %s WHERE checked = 0;", g_szTableName);
 	SQL_TQuery(g_DB, SQLHibaKereso, Query);
 	if(manager.DebugMode.BoolValue) { PrintToChatAll(" \x04Database refreshed!"); }
-	delete bot;
 	RefreshClients();
+}
+
+public int HeadersReceived(Handle request, bool failure, any data, any datapack) {
+	DataPack dp = view_as<DataPack>(datapack);
+	if(failure) {
+		delete dp;
+		return;
+	}
+	
+	char xRateLimit[16];
+	char xRateLeft[16];
+	char xRateReset[32];
+	
+	bool exists = false;
+	
+	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Limit", xRateLimit, sizeof(xRateLimit));
+	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Remaining", xRateLeft, sizeof(xRateLeft));
+	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Reset", xRateReset, sizeof(xRateReset));
+	
+	//Get url
+	char route[128];
+	ResetPack(dp);
+	ReadPackString(dp, route, sizeof(route));
+	delete dp;
+	
+	int reset = StringToInt(xRateReset);
+	if(reset > GetTime() + 3) {
+		reset = GetTime() + 3;
+	}
+	
+	if(exists) {
+		SetTrieValue(hRateReset, route, reset);
+		SetTrieValue(hRateLeft, route, StringToInt(xRateLeft));
+		SetTrieValue(hRateLimit, route, StringToInt(xRateLimit));
+	}else {
+		SetTrieValue(hRateReset, route, -1);
+		SetTrieValue(hRateLeft, route, -1);
+		SetTrieValue(hRateLimit, route, -1);
+	}
+}
+
+public Handle UrlToDP(char[] url) {
+	DataPack dp = new DataPack();
+	WritePackString(dp, url);
+	return dp;
+}
+
+stock void BuildAuthHeader(Handle request, DiscordBot Bot) {
+	static char buffer[256];
+	static char token[196];
+	JsonObjectGetString(Bot, "token", token, sizeof(token));
+	FormatEx(buffer, sizeof(buffer), "Bot %s", token);
+	SteamWorks_SetHTTPRequestHeaderValue(request, "Authorization", buffer);
+}
+
+public void DiscordSendRequest(Handle request, const char[] route) {
+	//Check for reset
+	int time = GetTime();
+	int resetTime;
+	
+	int defLimit = 0;
+	if(!GetTrieValue(hRateLimit, route, defLimit)) {
+		defLimit = 1;
+	}
+	
+	bool exists = GetTrieValue(hRateReset, route, resetTime);
+	
+	if(!exists) {
+		SetTrieValue(hRateReset, route, GetTime() + 5);
+		SetTrieValue(hRateLeft, route, defLimit - 1);
+		SteamWorks_SendHTTPRequest(request);
+		return;
+	}
+	
+	if(time == -1) {
+		//No x-rate-limit send
+		SteamWorks_SendHTTPRequest(request);
+		return;
+	}
+	
+	if(time > resetTime) {
+		SetTrieValue(hRateLeft, route, defLimit - 1);
+		SteamWorks_SendHTTPRequest(request);
+		return;
+	}else {
+		int left;
+		GetTrieValue(hRateLeft, route, left);
+		if(left == 0) {
+			float remaining = float(resetTime) - float(time) + 1.0;
+			Handle dp = new DataPack();
+			WritePackCell(dp, request);
+			WritePackString(dp, route);
+			CreateTimer(remaining, SendRequestAgain, dp);
+		}else {
+			left--;
+			SetTrieValue(hRateLeft, route, left);
+			SteamWorks_SendHTTPRequest(request);
+		}
+	}
+}
+
+public Action SendRequestAgain(Handle timer, any dp) {
+	ResetPack(dp);
+	Handle request = ReadPackCell(dp);
+	char route[128];
+	ReadPackString(dp, route, sizeof(route));
+	delete view_as<Handle>(dp);
+	DiscordSendRequest(request, route);
 }
 
 public Action Timer_SendMap(Handle timer)
