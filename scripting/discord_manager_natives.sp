@@ -30,7 +30,7 @@ public Action Command_Member(int client, int args)
 	{
 		char userid[64];
 		DSM_GetUserId(client, userid, sizeof(userid));
-		PrintToChat(client, " \x04%sYou are a member! Userid: %s", userid);
+		PrintToChat(client, " \x04You are a member! Userid: %s", userid);
 	} else {
 		PrintToChat(client, " \x07You aren't a member!");
 	}
